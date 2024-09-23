@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Participation;
 use App\Entity\ResearchProject;
+use App\Entity\Student;
 use App\Repository\ParticipationRepository;
 use App\Repository\ResearchProjectRepository;
 use App\Repository\StudentRepository;
@@ -52,9 +53,23 @@ class ParticipationController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         $student = $this->studentRepository->find($data['studentId']);
-        $project = $this->projectRepository->find($data['projectId']);
+        $project = $this->projectRepository->findOneBy(['researchCode' => $data['researchCode']]);
+
         if (!$student || !$project) {
             return $this->json('Estudiante o Proyecto no encontrados', Response::HTTP_NOT_FOUND);
+        }
+
+        $activeParticipation = $this->participationRepository->findOneBy([
+            'student' => $student,
+            'actualEndDate' => null,
+        ]);
+
+        if ($activeParticipation) {
+            return $this->json('El estudiante ya está participando en otro proyecto', Response::HTTP_BAD_REQUEST);
+        }
+
+        if ($project->getAvailableSpots() <= 0) {
+            return $this->json('No hay plazas disponibles en este proyecto', Response::HTTP_BAD_REQUEST);
         }
 
         $participation = new Participation();
@@ -62,6 +77,8 @@ class ParticipationController extends AbstractController
         $participation->setResearchProject($project);
         $participation->setStartDate(new \DateTime($data['startDate']));
         $participation->setEstimatedEndDate(new \DateTime($data['estimatedEndDate']));
+
+        $project->setAvailableSpots($project->getAvailableSpots() - 1);
 
         $this->entityManager->persist($participation);
         $this->entityManager->flush();
@@ -82,7 +99,7 @@ class ParticipationController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         $student = $this->studentRepository->find($data['studentId']);
-        $project = $this->projectRepository->find($data['projectId']);
+        $project = $this->projectRepository->findOneBy(['researchCode' => $data['researchCode']]);
         if (!$student || !$project) {
             return $this->json('Estudiante o Proyecto no encontrados', Response::HTTP_NOT_FOUND);
         }
@@ -101,6 +118,28 @@ class ParticipationController extends AbstractController
     }
 
     /**
+     * @Route("/participations/{id}/end", methods={"PUT"})
+     */
+    public function endParticipation(int $id, Request $request): JsonResponse
+    {
+        $participation = $this->participationRepository->find($id);
+        if (!$participation) {
+            return $this->json('Participación no encontrada', Response::HTTP_NOT_FOUND);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        $participation->setActualEndDate(new \DateTime($data['actualEndDate'] ?? 'now'));
+
+        $project = $participation->getResearchProject();
+        $project->setAvailableSpots($project->getAvailableSpots() + 1);
+
+        $this->entityManager->flush();
+
+        return $this->json('Participación finalizada exitosamente');
+    }
+
+    /**
      * @Route("/participations/{id}", methods={"DELETE"})
      */
     public function delete(int $id): JsonResponse
@@ -108,6 +147,11 @@ class ParticipationController extends AbstractController
         $participation = $this->participationRepository->find($id);
         if (!$participation) {
             return $this->json('Participación no encontrada', Response::HTTP_NOT_FOUND);
+        }
+
+        if ($participation->getActualEndDate() === null) {
+            $project = $participation->getResearchProject();
+            $project->setAvailableSpots($project->getAvailableSpots() + 1);
         }
 
         $this->entityManager->remove($participation);
