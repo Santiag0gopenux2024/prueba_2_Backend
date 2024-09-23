@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Student;
+use App\Form\StudentType;
 use App\Repository\StudentRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -12,6 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class StudentController extends AbstractController
 {
@@ -38,21 +40,25 @@ class StudentController extends AbstractController
      */
     public function register(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
         $student = new Student();
-        $student->setFullName($data['fullName']);
-        $student->setUniversity($data['university']);
-        $student->setEnrollmentNumber($data['enrollmentNumber']);
-        $student->setEnrollmentDate(new \DateTime());
+        $form = $this->createForm(StudentType::class, $student);
+        $form->submit(json_decode($request->getContent(), true));
+
+        if (!$form->isValid()) {
+            return $this->json($form->getErrors(true), Response::HTTP_BAD_REQUEST);
+        }
 
         $this->entityManager->persist($student);
         $this->entityManager->flush();
 
-        return $this->json('Estudiante registrado exitosamente');
+        return $this->json([
+            'message' => 'Estudiante registrado exitosamente',
+            'student' => $student,
+        ]);
     }
 
     /**
-     * @Route("/students/{id}", methods={"PUT"})
+     * @Route("/students/{id}", methods={"PATCH"})
      */
     public function edit(int $id, Request $request): JsonResponse
     {
@@ -61,13 +67,19 @@ class StudentController extends AbstractController
             return $this->json('Estudiante no encontrado', Response::HTTP_NOT_FOUND);
         }
 
-        $data = json_decode($request->getContent(), true);
-        $student->setFullName($data['fullName']);
-        $student->setUniversity($data['university']);
-        $student->setEnrollmentNumber($data['enrollmentNumber']);
+        $form = $this->createForm(StudentType::class, $student);
+        $form->submit(json_decode($request->getContent(), true), false);
+
+        if (!$form->isValid()) {
+            return $this->json($form->getErrors(true), Response::HTTP_BAD_REQUEST);
+        }
+
         $this->entityManager->flush();
 
-        return $this->json('Estudiante actualizado exitosamente');
+        return $this->json([
+            'message' => 'Estudiante actualizado exitosamente',
+            'student' => $student,
+        ]);
     }
 
     /**
@@ -83,6 +95,8 @@ class StudentController extends AbstractController
         $this->entityManager->remove($student);
         $this->entityManager->flush();
 
-        return $this->json('Estudiante eliminado exitosamente');
+        return $this->json([
+            'message' => 'Estudiante eliminado exitosamente',
+        ]);
     }
 }

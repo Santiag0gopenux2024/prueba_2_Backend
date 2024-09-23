@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Participation;
-use App\Entity\ResearchProject;
-use App\Entity\Student;
+use App\Form\ParticipationType;
 use App\Repository\ParticipationRepository;
 use App\Repository\ResearchProjectRepository;
 use App\Repository\StudentRepository;
@@ -50,10 +49,16 @@ class ParticipationController extends AbstractController
      */
     public function register(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $participation = new Participation();
+        $form = $this->createForm(ParticipationType::class, $participation);
+        $form->handleRequest($request);
 
-        $student = $this->studentRepository->find($data['studentId']);
-        $project = $this->projectRepository->findOneBy(['researchCode' => $data['researchCode']]);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
+        }
+
+        $student = $this->studentRepository->find($participation->getStudentId());
+        $project = $this->projectRepository->findOneBy(['researchCode' => $participation->getResearchCode()]);
 
         if (!$student || !$project) {
             return $this->json('Estudiante o Proyecto no encontrados', Response::HTTP_NOT_FOUND);
@@ -72,12 +77,8 @@ class ParticipationController extends AbstractController
             return $this->json('No hay plazas disponibles en este proyecto', Response::HTTP_BAD_REQUEST);
         }
 
-        $participation = new Participation();
         $participation->setStudent($student);
         $participation->setResearchProject($project);
-        $participation->setStartDate(new \DateTime($data['startDate']));
-        $participation->setEstimatedEndDate(new \DateTime($data['estimatedEndDate']));
-
         $project->setAvailableSpots($project->getAvailableSpots() - 1);
 
         $this->entityManager->persist($participation);
@@ -87,7 +88,7 @@ class ParticipationController extends AbstractController
     }
 
     /**
-     * @Route("/participations/{id}", methods={"PUT"})
+     * @Route("/participations/{id}", methods={"PATCH"})
      */
     public function edit(int $id, Request $request): JsonResponse
     {
@@ -96,21 +97,21 @@ class ParticipationController extends AbstractController
             return $this->json('Participación no encontrada', Response::HTTP_NOT_FOUND);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $form = $this->createForm(ParticipationType::class, $participation);
+        $form->handleRequest($request);
 
-        $student = $this->studentRepository->find($data['studentId']);
-        $project = $this->projectRepository->findOneBy(['researchCode' => $data['researchCode']]);
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
+        }
+
+        $student = $this->studentRepository->find($participation->getStudentId());
+        $project = $this->projectRepository->findOneBy(['researchCode' => $participation->getResearchCode()]);
         if (!$student || !$project) {
             return $this->json('Estudiante o Proyecto no encontrados', Response::HTTP_NOT_FOUND);
         }
 
         $participation->setStudent($student);
         $participation->setResearchProject($project);
-        $participation->setStartDate(new \DateTime($data['startDate']));
-        $participation->setEstimatedEndDate(new \DateTime($data['estimatedEndDate']));
-        if (isset($data['actualEndDate'])) {
-            $participation->setActualEndDate(new \DateTime($data['actualEndDate']));
-        }
 
         $this->entityManager->flush();
 
@@ -118,7 +119,7 @@ class ParticipationController extends AbstractController
     }
 
     /**
-     * @Route("/participations/{id}/end", methods={"PUT"})
+     * @Route("/participations/{id}/end", methods={"PATCH"})
      */
     public function endParticipation(int $id, Request $request): JsonResponse
     {
@@ -128,8 +129,8 @@ class ParticipationController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
-
-        $participation->setActualEndDate(new \DateTime($data['actualEndDate'] ?? 'now'));
+        $actualEndDate = new \DateTime($data['actualEndDate'] ?? 'now');
+        $participation->setActualEndDate($actualEndDate);
 
         $project = $participation->getResearchProject();
         $project->setAvailableSpots($project->getAvailableSpots() + 1);

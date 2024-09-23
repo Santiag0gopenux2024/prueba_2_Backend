@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\ResearchProject;
+use App\Form\ResearchProjectType;
 use App\Repository\ResearchProjectRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -12,6 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class ResearchProjectController extends AbstractController
 {
@@ -36,37 +38,48 @@ class ResearchProjectController extends AbstractController
     /**
      * @Route("/projects", methods={"POST"})
      */
-    public function register(Request $request): JsonResponse
+    public function register(Request $request, ValidatorInterface $validator): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
         $project = new ResearchProject();
-        $project->setName($data['name']);
-        $project->setResearchCode($data['researchCode']);
-        $project->setAvailableSpots($data['availableSpots']);
+        $form = $this->createForm(ResearchProjectType::class, $project);
+        $form->handleRequest($request);
+
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
+        }
 
         $this->entityManager->persist($project);
         $this->entityManager->flush();
 
-        return $this->json('Proyecto registrado exitosamente');
+        return $this->json([
+            'message' => 'Proyecto registrado exitosamente',
+            'project' => $project,
+        ]);
     }
 
     /**
-     * @Route("/projects/{id}", methods={"PUT"})
+     * @Route("/projects/{id}", methods={"PATCH"})
      */
-    public function edit(int $id, Request $request): JsonResponse
+    public function edit(int $id, Request $request, ValidatorInterface $validator): JsonResponse
     {
         $project = $this->projectRepository->find($id);
         if (!$project) {
             return $this->json('Proyecto no encontrado', Response::HTTP_NOT_FOUND);
         }
 
-        $data = json_decode($request->getContent(), true);
-        $project->setName($data['name']);
-        $project->setResearchCode($data['researchCode']);
-        $project->setAvailableSpots($data['availableSpots']);
+        $form = $this->createForm(ResearchProjectType::class, $project);
+        $form->handleRequest($request);
+
+        if (!$form->isSubmitted() || !$form->isValid()) {
+            return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
+        }
+
         $this->entityManager->flush();
 
-        return $this->json('Proyecto actualizado exitosamente');
+        return $this->json([
+            'message' => 'Proyecto actualizado exitosamente',
+            'project' => $project,
+        ]);
     }
 
     /**
