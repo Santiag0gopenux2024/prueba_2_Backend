@@ -1,0 +1,15 @@
+#index:
+#    path: /
+#    controller: App\Controller\DefaultController::index
+
+student:
+  path: /students
+  controller: App\Controller\StudentController::index
+
+research_project:
+  path: /research-projects
+  controller: App\Controller\ResearchProjectController::index
+
+participation:
+  path: /participations
+  controller: App\Controller\ParticipationController::create
