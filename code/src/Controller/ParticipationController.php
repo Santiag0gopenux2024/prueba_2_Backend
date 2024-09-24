@@ -98,7 +98,7 @@ class ParticipationController extends AbstractController
         }
 
         $form = $this->createForm(ParticipationType::class, $participation);
-        $form->handleRequest($request);
+        $form->handleRequest($request); // Cambiado a handleRequest
 
         if (!$form->isSubmitted() || !$form->isValid()) {
             return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);

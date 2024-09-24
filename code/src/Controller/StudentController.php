@@ -13,7 +13,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class StudentController extends AbstractController
 {
@@ -42,9 +41,9 @@ class StudentController extends AbstractController
     {
         $student = new Student();
         $form = $this->createForm(StudentType::class, $student);
-        $form->submit(json_decode($request->getContent(), true));
+        $form->handleRequest($request);
 
-        if (!$form->isValid()) {
+        if (!$form->isSubmitted() || !$form->isValid()) {
             return $this->json($form->getErrors(true), Response::HTTP_BAD_REQUEST);
         }
 
@@ -68,9 +67,9 @@ class StudentController extends AbstractController
         }
 
         $form = $this->createForm(StudentType::class, $student);
-        $form->submit(json_decode($request->getContent(), true), false);
+        $form->handleRequest($request);
 
-        if (!$form->isValid()) {
+        if (!$form->isSubmitted() || !$form->isValid()) {
             return $this->json($form->getErrors(true), Response::HTTP_BAD_REQUEST);
         }
 
