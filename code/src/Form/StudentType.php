@@ -7,8 +7,7 @@ namespace App\Form;
 use App\Entity\Student;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\Extension\Core\Type\DateType;
-use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -20,7 +19,10 @@ class StudentType extends AbstractType
             ->add('fullName', TextType::class)
             ->add('university', TextType::class)
             ->add('enrollmentNumber', TextType::class)
-            ->add('enrollmentDate', DateType::class);
+            ->add('enrollmentDate', DateTimeType::class, [
+                'widget' => 'single_text',
+                'html5' => false,
+            ]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

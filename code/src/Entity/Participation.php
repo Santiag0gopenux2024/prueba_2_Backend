@@ -20,14 +20,14 @@ class Participation
     private ?int $id = null;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Student", inversedBy="participations")
+     * @ORM\ManyToOne(targetEntity="App\Entity\Student", inversedBy="participation")
      * @ORM\JoinColumn(name="student_id", referencedColumnName="id", nullable=false)
      */
     private ?Student $student = null;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\ResearchProject", inversedBy="participations")
-     * @ORM\JoinColumn(name="research_code", referencedColumnName="id", nullable=false)
+     * @ORM\ManyToOne(targetEntity="App\Entity\ResearchProject", inversedBy="participation")
+     * @ORM\JoinColumn(name="research_project_id", referencedColumnName="id", nullable=false)
      */
     private ?ResearchProject $researchProject = null;
 

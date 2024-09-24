@@ -44,17 +44,17 @@ class ResearchProjectController extends AbstractController
         $form = $this->createForm(ResearchProjectType::class, $project);
         $form->handleRequest($request);
 
-        if (!$form->isSubmitted() || !$form->isValid()) {
-            return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->entityManager->persist($project);
+            $this->entityManager->flush();
+
+            return $this->json([
+                'message' => 'Proyecto registrado exitosamente',
+                'project' => $project,
+            ]);
         }
 
-        $this->entityManager->persist($project);
-        $this->entityManager->flush();
-
-        return $this->json([
-            'message' => 'Proyecto registrado exitosamente',
-            'project' => $project,
-        ]);
+        return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
     }
 
     /**
@@ -67,19 +67,22 @@ class ResearchProjectController extends AbstractController
             return $this->json('Proyecto no encontrado', Response::HTTP_NOT_FOUND);
         }
 
-        $form = $this->createForm(ResearchProjectType::class, $project);
+
+        $form = $this->createForm(ResearchProjectType::class, $project, [
+            'method' => Request::METHOD_PATCH,
+        ]);
         $form->handleRequest($request);
 
-        if (!$form->isSubmitted() || !$form->isValid()) {
-            return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->entityManager->flush();
+
+            return $this->json([
+                'message' => 'Proyecto actualizado exitosamente',
+                'project' => $project,
+            ]);
         }
 
-        $this->entityManager->flush();
-
-        return $this->json([
-            'message' => 'Proyecto actualizado exitosamente',
-            'project' => $project,
-        ]);
+        return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
     }
 
     /**

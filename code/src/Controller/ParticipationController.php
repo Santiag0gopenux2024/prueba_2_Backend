@@ -53,38 +53,38 @@ class ParticipationController extends AbstractController
         $form = $this->createForm(ParticipationType::class, $participation);
         $form->handleRequest($request);
 
-        if (!$form->isSubmitted() || !$form->isValid()) {
-            return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
+        if ($form->isSubmitted() && $form->isValid()) {
+            /*$student = $this->studentRepository->findOneBy(['id' => $participation->getStudent()->getId()]);
+            $project = $this->projectRepository->findOneBy(['id' => $participation->getResearchProject()->getId()]);
+
+            if (!$student || !$project) {
+                return $this->json('Estudiante o Proyecto no encontrados', Response::HTTP_NOT_FOUND);
+            }
+
+            $activeParticipation = $this->participationRepository->findOneBy([
+                'student' => $student,
+                'actualEndDate' => null,
+            ]);
+
+            if ($activeParticipation) {
+                return $this->json('El estudiante ya está participando en otro proyecto', Response::HTTP_BAD_REQUEST);
+            }
+
+            if ($project->getAvailableSpots() <= 0) {
+                return $this->json('No hay plazas disponibles en este proyecto', Response::HTTP_BAD_REQUEST);
+            }
+
+            $participation->setStudent($student);
+            $participation->setResearchProject($project);
+            $project->setAvailableSpots($project->getAvailableSpots() - 1);*/
+
+            $this->entityManager->persist($participation);
+            $this->entityManager->flush();
+
+            return $this->json('Participación registrada exitosamente');
         }
 
-        $student = $this->studentRepository->find($participation->getStudentId());
-        $project = $this->projectRepository->findOneBy(['researchCode' => $participation->getResearchCode()]);
-
-        if (!$student || !$project) {
-            return $this->json('Estudiante o Proyecto no encontrados', Response::HTTP_NOT_FOUND);
-        }
-
-        $activeParticipation = $this->participationRepository->findOneBy([
-            'student' => $student,
-            'actualEndDate' => null,
-        ]);
-
-        if ($activeParticipation) {
-            return $this->json('El estudiante ya está participando en otro proyecto', Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($project->getAvailableSpots() <= 0) {
-            return $this->json('No hay plazas disponibles en este proyecto', Response::HTTP_BAD_REQUEST);
-        }
-
-        $participation->setStudent($student);
-        $participation->setResearchProject($project);
-        $project->setAvailableSpots($project->getAvailableSpots() - 1);
-
-        $this->entityManager->persist($participation);
-        $this->entityManager->flush();
-
-        return $this->json('Participación registrada exitosamente');
+        return $this->json($participation, Response::HTTP_BAD_REQUEST);
     }
 
     /**
@@ -97,25 +97,32 @@ class ParticipationController extends AbstractController
             return $this->json('Participación no encontrada', Response::HTTP_NOT_FOUND);
         }
 
-        $form = $this->createForm(ParticipationType::class, $participation);
-        $form->handleRequest($request); // Cambiado a handleRequest
+        $form = $this->createForm(ParticipationType::class, $participation, [
+            'method' => Request::METHOD_PATCH,
+        ]);
+        $form->handleRequest($request);
 
-        if (!$form->isSubmitted() || !$form->isValid()) {
-            return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
+        if ($form->isSubmitted() && $form->isValid()) {
+            /* $student = $this->studentRepository->find($participation->getStudentId());
+            $project = $this->projectRepository->findOneBy(['researchCode' => $participation->getResearchCode()]);
+
+            if (!$student) {
+                return $this->json('Estudiante no encontrado', Response::HTTP_NOT_FOUND);
+            }
+
+            if (!$project) {
+                return $this->json('Proyecto no encontrado', Response::HTTP_NOT_FOUND);
+            }
+
+            $participation->setStudent($student);
+            $participation->setResearchProject($project); */
+
+            $this->entityManager->flush();
+
+            return $this->json('Participación actualizada exitosamente');
         }
 
-        $student = $this->studentRepository->find($participation->getStudentId());
-        $project = $this->projectRepository->findOneBy(['researchCode' => $participation->getResearchCode()]);
-        if (!$student || !$project) {
-            return $this->json('Estudiante o Proyecto no encontrados', Response::HTTP_NOT_FOUND);
-        }
-
-        $participation->setStudent($student);
-        $participation->setResearchProject($project);
-
-        $this->entityManager->flush();
-
-        return $this->json('Participación actualizada exitosamente');
+        return $this->json('Formulario inválido', Response::HTTP_BAD_REQUEST);
     }
 
     /**
@@ -129,11 +136,16 @@ class ParticipationController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
+        /*
+        if (!isset($data['actualEndDate'])) {
+            return $this->json('La fecha de finalización no está establecida', Response::HTTP_BAD_REQUEST);
+        }
+
         $actualEndDate = new \DateTime($data['actualEndDate'] ?? 'now');
         $participation->setActualEndDate($actualEndDate);
 
         $project = $participation->getResearchProject();
-        $project->setAvailableSpots($project->getAvailableSpots() + 1);
+        $project->setAvailableSpots($project->getAvailableSpots() + 1); */
 
         $this->entityManager->flush();
 

@@ -43,17 +43,17 @@ class StudentController extends AbstractController
         $form = $this->createForm(StudentType::class, $student);
         $form->handleRequest($request);
 
-        if (!$form->isSubmitted() || !$form->isValid()) {
-            return $this->json($form->getErrors(true), Response::HTTP_BAD_REQUEST);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->entityManager->persist($student);
+            $this->entityManager->flush();
+
+            return $this->json([
+                'message' => 'Estudiante registrado exitosamente',
+                'student' => $student,
+            ]);
         }
 
-        $this->entityManager->persist($student);
-        $this->entityManager->flush();
-
-        return $this->json([
-            'message' => 'Estudiante registrado exitosamente',
-            'student' => $student,
-        ]);
+        return $this->json($form->getErrors(true), Response::HTTP_BAD_REQUEST);
     }
 
     /**
@@ -66,19 +66,21 @@ class StudentController extends AbstractController
             return $this->json('Estudiante no encontrado', Response::HTTP_NOT_FOUND);
         }
 
-        $form = $this->createForm(StudentType::class, $student);
+        $form = $this->createForm(StudentType::class, $student, [
+            'method' => Request::METHOD_PATCH,
+        ]);
         $form->handleRequest($request);
 
-        if (!$form->isSubmitted() || !$form->isValid()) {
-            return $this->json($form->getErrors(true), Response::HTTP_BAD_REQUEST);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->entityManager->flush();
+
+            return $this->json([
+                'message' => 'Estudiante actualizado exitosamente',
+                'student' => $student,
+            ]);
         }
 
-        $this->entityManager->flush();
-
-        return $this->json([
-            'message' => 'Estudiante actualizado exitosamente',
-            'student' => $student,
-        ]);
+        return $this->json($form->getErrors(true), Response::HTTP_BAD_REQUEST);
     }
 
     /**
